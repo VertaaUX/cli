@@ -1,0 +1,89 @@
+{
+  "name": "@vertaaux/cli",
+  "version": "0.6.2",
+  "description": "Run automated UX audits, accessibility checks, and performance analysis from the terminal or CI pipelines. Supports policy gating, SARIF output, and multi-page crawling. See https://github.com/VertaaUX/cli#readme for full docs.",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "vertaa": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "schemas",
+    "README.md",
+    "CHANGELOG.md",
+    "MIGRATION.md"
+  ],
+  "keywords": [
+    "vertaaux",
+    "vertaa",
+    "cli",
+    "ux",
+    "audit",
+    "accessibility",
+    "a11y",
+    "ci"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/VertaaUX/cli.git"
+  },
+  "homepage": "https://github.com/VertaaUX/cli#readme",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "bundleDependencies": [
+    "@vertaaux/tui"
+  ],
+  "scripts": {
+    "prebuild": "node scripts/fix-node-pty-permissions.mjs 2>/dev/null || true",
+    "build": "tsc",
+    "dev": "tsc -w",
+    "start": "node dist/index.js",
+    "postinstall": "node scripts/fix-node-pty-permissions.mjs 2>/dev/null || true",
+    "pretest": "node scripts/fix-node-pty-permissions.mjs 2>/dev/null || true",
+    "prepublishOnly": "npm run build && node scripts/verify-package.mjs",
+    "test": "vitest run --config vitest.config.ts --exclude tests/e2e/**/*.test.ts",
+    "pretest:e2e": "node scripts/fix-node-pty-permissions.mjs 2>/dev/null || true",
+    "test:e2e": "vitest run --config vitest.config.ts tests/e2e/cli-contract.test.ts",
+    "pretest:e2e:package": "node scripts/fix-node-pty-permissions.mjs 2>/dev/null || true",
+    "test:e2e:package": "vitest run --config vitest.config.ts tests/e2e/package-install.test.ts",
+    "pretest:e2e:ui": "node scripts/fix-node-pty-permissions.mjs 2>/dev/null || true",
+    "test:e2e:ui": "vitest --ui --config vitest.config.ts tests/e2e/cli-contract.test.ts",
+    "pretest:pty": "node scripts/fix-node-pty-permissions.mjs 2>/dev/null || true",
+    "test:pty": "vitest run --config vitest.config.pty.ts",
+    "pretest:snapshot": "node scripts/fix-node-pty-permissions.mjs 2>/dev/null || true",
+    "test:snapshot": "vitest run --config vitest.config.snapshot.ts"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^8.2.0",
+    "@vertaaux/sdk": "^2.0.0",
+    "@vertaaux/tui": "file:../packages/tui",
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1",
+    "chalk": "^5.6.2",
+    "commander": "^14.0.2",
+    "cosmiconfig": "^9.0.0",
+    "dotenv": "^17.2.3",
+    "minimatch": "^10.1.1",
+    "semver": "^7.7.3",
+    "yaml": "^2.8.2"
+  },
+  "devDependencies": {
+    "@types/minimatch": "^5.1.2",
+    "@types/node": "^20.11.25",
+    "@types/semver": "^7.7.1",
+    "@vitest/ui": "^4.0.18",
+    "node-pty": "^1.1.0",
+    "strip-ansi": "^7.2.0",
+    "typescript": "^5.6.3",
+    "vitest": "^4.0.15"
+  },
+  "bugs": {
+    "url": "https://github.com/VertaaUX/cli/issues"
+  }
+}
