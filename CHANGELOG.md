@@ -7,24 +7,113 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.8.0-alpha.1] - 2026-05-25
+## [0.8.1] - 2026-05-25
 
-> **Alpha release on the `next` tag.** The stable `latest` tag remains at `0.6.2`. Install this alpha via `npm install -g @vertaaux/cli@next` or pin to `@vertaaux/cli@0.8.0-alpha.1`.
+First stable release on the 0.8 line, replacing the 0.6.2 stable line on the `latest` npm tag. Consolidates every change since the May 5 `0.6.2` release into a production-grade graduation. Skips the 0.7.0-alpha.{1,2,3} and 0.8.0-alpha.{0,1,2} pre-release tags that lived on the `next` channel during May.
 
 ### Added
 
-- `vertaa explain <findingId> --copy` — write the recommended fix for a specific issue to stdout, pipe-clean for clipboard tools. Use `vertaa explain X --copy | pbcopy` (macOS) or `| xclip -i` (Linux) to send the fix directly to your clipboard. Evidence rendering, step-list output, and the "Fix written to stdout" hint all go to stderr so they remain visible in your terminal without polluting the pipe. Emits a `finding_fix_copied` telemetry event.
-- Interactive fix-wizard (`vertaa audit … --interactive`) gains a "Copy fix to stdout" menu choice. Selecting it copies the current finding's recommended fix and stays on the same finding so you can also baseline or accept after copying.
+#### DX foundations (was 0.7.0-alpha.1)
+- **`vertaa demo`** — replay a fixture audit through the live renderer offline, no API required.
+- **`vertaa completion <bash|zsh|fish>`** — shell completion scripts. Install with `vertaa completion bash > /usr/local/etc/bash_completion.d/vertaa` or equivalent.
+- **`vertaa upgrade`** — self-update to the latest npm version.
+- **Framework auto-detect in `vertaa init`** — `.vertaaux.yml` is now populated with sensible defaults inferred from your project (Next.js, Astro, Vite, Storybook, etc.).
+- **31% smaller npm tarball** — packaging cleanup.
+
+#### Live dashboard (was 0.7.0-alpha.2)
+- **`renderDashboardV2()`** — animated 7-cell score grid, per-category sparklines (`▁▂▃▄▅▆▇█`), live-issues feed (top 5 severity-colored), proportional severity histogram, elapsed-time footer.
+- **`vertaa demo` upgraded to v2** — synthesized score history and live-issues feed for a realistic replay.
+
+#### Fuzzy palette, watch mode (was 0.7.0-alpha.3)
+- **Ctrl+P opens the command palette** — fuzzy search across every command, with category tags.
+- **`vertaa audit --watch`** — re-runs the audit on filesystem changes with debounced trigger.
+- **Animated score reveal** — score tweening in the dashboard for a smooth final-result transition.
+
+#### Phase 147 CLI Package Isolation (was 0.8.0-alpha.1)
+- **`vertaa explain <findingId> --copy`** — writes the recommended fix for a specific finding to stdout, pipe-clean for clipboard tools. Use `vertaa explain X --copy | pbcopy` (macOS) or `| xclip -i` (Linux). Evidence rendering, step-list output, and the "Fix written to stdout" hint all route to stderr so they stay visible without polluting the pipe. Emits a `finding_fix_copied` telemetry event.
+- **Interactive fix-wizard "Copy fix to stdout" choice** — sixth menu item in `vertaa audit --interactive`. Selecting it copies the current finding's recommended fix and stays on the same finding so you can also baseline or accept after copying.
+- **Type mirror at `cli/src/types/audit.ts`** — canonical `Severity` + `AuditCategoryKey` unions are now mirrored into the CLI package boundary with a CI-gated drift check.
+
+#### Production-grade boundary normalization (was 0.8.0-alpha.2 + 0.8.1 prep)
+- **Synthetic `ruleId` hydration in audit output** — when the audit-engine emits issues without `ruleId` (current behavior on `lib/audit-engine/auditor-ia.ts`, `auditor-usability.ts`, `auditor-conversion.ts`), the CLI backfills stable IDs in the form `synthetic/<category>-<title-slug>-<index>`. Saved audit JSON now exposes addressable findings for `vertaa explain <id> --file file.json --copy`. Idempotent — real ruleIds (e.g. `custom/semantic-landmark` from the accessibility analyzer) pass through unchanged.
+- **Severity vocab normalized to the canonical 5-tier union at the CLI boundary** — `critical | high | medium | low | info`. The production backend still emits legacy 3-tier (`error/warning/info`); the CLI maps at audit-write + explain-load boundaries so the changelog promise from 0.8.0-alpha.0 is now actually fulfilled in published output. The `--severity-legacy` flag remains available for users who need the old vocab in CI scripts.
+- **Canonical `Issue` type at `cli/src/baseline/hash.ts`** now declares both snake_case AND camelCase variants for `recommendedFix`/`recommended_fix`, `wcagReference`/`wcag_reference`, `businessImpact`/`business_impact`, `impactScore`/`impact_score`, `estimatedEffort`/`estimated_effort` — matches the actual audit JSON wire shape.
+- **`vertaa explain --file out.json` unwraps `{ data: { issues }, meta }`** — the envelope shape produced by `vertaa audit --format json`. Bare `{ issues: [] }` and flat-array shapes still work for backwards compat. No more `jq` reshape needed.
 
 ### Fixed
 
-- CLI builds and runs cleanly again. A stale internal alias in the copy-fix command broke `npm run build` and cascaded into 240+ downstream test failures during the previous alpha cycle. The whole cascade is gone.
-- ANSI-colored error frames now render correctly in TTY mode for the `vertaa audit` "URL is required" error and for `vertaa explain --copy` missing-argument validation.
-- A long-standing mock-drift in 13 internal command tests is closed out, lifting the suite to 145/145 files green (2,371 tests pass, 4 PTY-only skipped on systems without `node-pty`).
+- **CLI builds and runs cleanly** — a stale internal alias in the copy-fix command broke `cd cli && npm run build` and cascaded into 240+ downstream test failures during the 0.7.x alpha cycle. Cascade is fully collapsed (0 failed test files / 0 failed tests).
+- **ANSI-colored error frames in TTY mode** — `vertaa audit` "URL is required" error and `vertaa explain --copy` missing-argument validation now render branded `renderError` frames in TTY mode.
+- **`process.std*.write()` violations in command files** — wrapped per the renderer-enforcement contract.
+- **Pre-existing test debt closeout** — 13 internal command tests' `strings.js` mock drift fixed; PTY snapshots re-recorded for current help output (`--sarif`, `--ci` flags + new `completion`/`upgrade`/`demo` commands).
+- **Typo `toLeqacySeverity` → `toLegacySeverity`** in `cli/src/lib/severity-compat.ts`.
 
-### Notes
+### Migration
 
-- This alpha skips 0.7.0-alpha.3 onward on the public mirror — earlier alphas were published to npm but not synced here. The diff against the last public version (`0.6.2`) is documented above in the Added + Fixed sections.
+If you're upgrading from `0.6.2` (the previous stable):
+
+- **Severity vocab changed.** `audit --format json` now emits `critical | high | medium | low | info` instead of the legacy `error | warning | info`. CI scripts that grep for legacy values should either (a) update their patterns or (b) use `vertaa audit --severity-legacy` for one transitional cycle. The `--severity-legacy` flag is documented for removal in the next CLI minor.
+- **Audit JSON now wraps in `{ data, meta }`** — most CLI commands accept both wrapped + bare shapes (`explain --file` accepts both; `baseline --from-file` accepts both). External tools that pipe `vertaa audit --format json` outputs should read from `.data.issues` (not top-level `.issues`).
+- **`baseline` fallback severity** for issues without an explicit severity field is now `"medium"` (was `"warning"` pre-0.8.0).
+- **`vertaa fix` and `vertaa fix-all` `--issue` flag** is now conditionally required (only when `--dry-run` is absent). Pre-0.8.0 it was strictly required, which blocked `--dry-run` workflows.
+
+## [0.8.0-alpha.0] - 2026-05-17
+
+### Changed
+
+- Severity vocabulary in `audit` output is now `critical | high | medium | low | info` (Phase 137 VOICE-02).
+- Baseline manager fallback severity for issues without a severity field changed from `"warning"` to `"medium"`.
+
+### Added
+
+- `--severity-legacy` flag for the `audit` command. Emits the legacy 3-tier vocab on stdout for one transitional cycle. CI pipelines that grep for the old values can use this flag without rewriting. Removed in the next CLI minor.
+
+### Migration
+
+- Replace pattern matches on `"error"` with `"high"`, `"warning"` with `"medium"` in CI scripts and machine-readable output consumers. New `"critical"` values appear when a finding blocks primary user completion.
+
+## [0.7.0-alpha.2] - 2026-05-06
+
+Sprint 2 of the v0.7.0 milestone: **the live dashboard**. The static frame from v0.1.x has been replaced with a 7-cell score grid, sparklines, a streaming live-issues feed, and a severity histogram in the footer. Visible during `vertaa demo`; auto-switches in for any caller that populates the new state fields. Animated score reveal and live audit-pipeline wiring land in alpha.3 alongside Sprint 3.
+
+### Added
+
+- **`renderDashboardV2()` in `@vertaaux/tui`** — pure render function. Header box (URL + mode + clock), phase line with bullet progress, 7-cell score grid (one cell per audit category with score + 6-glyph sparkline), live-issues feed (top 5, severity-colored), severity histogram bar (proportional widths colored by tier), elapsed-time footer.
+- **Sparkline rendering** — 8-band block-glyph sparklines (`▁▂▃▄▅▆▇█`) per category, padded on the left when history is short. Exported as `renderSparkline()` for reuse.
+- **Optional dashboard state fields** — `categoryScores`, `scoreHistory`, `liveIssues`, `severityCounts`, `scoreReveal`. Backwards-compatible: callers on the old shape get the legacy frame; any caller that populates one of the new fields gets v2 automatically.
+- **`vertaa demo` upgraded to v2** — populates `categoryScores`, synthesizes a smooth `scoreHistory` ramp toward the final value (sparklines look like real progress), wires in `liveIssues` from the fixture and `severityCounts` from `issues_summary`. The replay now shows the full new dashboard.
+
+### Changed
+
+- **`AlternateScreenRenderer.update()`** — auto-detects the new state shape (any of `categoryScores` / `liveIssues` / `severityCounts`) and renders v2; otherwise falls back to the legacy frame. No flag, no opt-in. Pure additive change.
+- **Phase-dot rendering** — bullet count now matches `state.phaseTotal` (audit pipeline reports 9, demo reports 9, init reports 1) instead of always being the 4-step `PHASE_ORDER`.
+
+### Internal
+
+- 21 new vitest cases under `packages/tui/tests/dashboard/dashboard-v2.test.ts` covering: header/phase/footer structure, 7-up category grid (canonical order, label truncation, uncategorized append), sparkline glyph mapping (range 0–100, left-pad, clamp, empty history), live-issues feed (presence/absence, max-5, severity tags, ellipsis truncation), severity histogram (proportional widths, fallback when no breakdown, "no issues" state), and color-mode stability.
+- Manually rendered against a 100×50 viewport with full state to verify visual layout.
+- Full CLI test suite shows zero new failures vs `main` (4 pre-existing E2E failures predate this PR; tracked for S4).
+
+## [0.7.0-alpha.1] - 2026-05-06
+
+First alpha of the v0.7.0 "DX & The Dashboard" milestone, building toward a Product Hunt launch in early June. This release is **DX foundations**: shell completions, self-update, `vertaa demo`, framework auto-detect in `vertaa init`, and a 31% smaller npm tarball. Sprint 2 brings the live dashboard rewrite; Sprint 3 brings the fuzzy command palette and `--watch` mode.
+
+### Added
+
+- **`vertaa completion <bash|zsh|fish>`** — Shell-completion script generated from the live Commander program tree. Pipe the output to your shell's completion directory or `source <(vertaa completion bash)` inline. Walks every command, sub-command, alias, and flag automatically, so future commands get tab-completion for free.
+- **`vertaa upgrade`** — Self-update with semver-aware comparison. Detects the install method (global npm / npx / project-local) and runs the right install command. `--check` exits non-zero on drift (CI-friendly), `--yes` skips the confirmation prompt for unattended use.
+- **`vertaa demo`** — Replay a fixture audit through the live renderer (offline, ~14 seconds). Same dashboard pipeline a real audit uses, but with guaranteed-pretty data. Use it to demo VertaaUX without burning credits or waiting for a network. `--fast` skips delays for screenshots; `--machine` emits the fixture as JSON.
+- **`vertaa init` framework auto-detect** — Sniffs Next.js, Vite, Astro, Remix, Nuxt, SvelteKit, Gatsby, Eleventy, Vue (CLI), React (CRA), and Hugo from `package.json` deps and config files; reads explicit dev-server ports out of `scripts.dev` (`--port`, `-p`, `PORT=`); pre-fills `defaultUrl` so the first audit a new user runs hits their own dev server, not `https://example.com`.
+
+### Changed
+
+- **31% smaller npm tarball.** New `tsconfig.build.json` strips `.d.ts`/`.d.ts.map` from the published package (the CLI is consumed as a binary, not a library). Tarball: 287 kB packed / 1.2 MB unpacked / 132 files (was 416 kB / 1.7 MB / 367 files).
+- **Tightened `scripts/verify-package.mjs`.** Added file-shape gates (no source maps, no declaration files in `dist/`, no test files leaked) and hard caps on tarball file count (≤200) and unpacked size (≤1.5 MB). Publish is blocked if any gate trips.
+
+### Internal
+
+- 70 new tests across `completion`, `upgrade`, `demo`, and `detect-framework`. Full CLI suite shows zero new failures vs `main` (the 4 pre-existing E2E failures predate this PR; tracked for S4).
+- Sensitive-write hygiene: `process.stderr.write` calls in command files now go through `renderError` / `renderWarning` per the structural test in `tests/pty/renderer-enforcement.test.ts`. Fixed a pre-existing violation in `upload.ts` along the way.
 
 ## [0.6.2] - 2026-05-05
 
