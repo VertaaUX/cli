@@ -1,6 +1,6 @@
 {
   "name": "@vertaaux/cli",
-  "version": "0.8.0-alpha.1",
+  "version": "0.8.0-alpha.2",
   "description": "Run automated UX audits, accessibility checks, and performance analysis from the terminal or CI pipelines. Supports policy gating, SARIF output, and multi-page crawling. See https://github.com/VertaaUX/cli#readme for full docs.",
   "type": "module",
   "main": "dist/index.js",
