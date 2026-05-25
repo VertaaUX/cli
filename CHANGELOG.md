@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0-alpha.1] - 2026-05-25
+
+> **Alpha release on the `next` tag.** The stable `latest` tag remains at `0.6.2`. Install this alpha via `npm install -g @vertaaux/cli@next` or pin to `@vertaaux/cli@0.8.0-alpha.1`.
+
+### Added
+
+- `vertaa explain <findingId> --copy` — write the recommended fix for a specific issue to stdout, pipe-clean for clipboard tools. Use `vertaa explain X --copy | pbcopy` (macOS) or `| xclip -i` (Linux) to send the fix directly to your clipboard. Evidence rendering, step-list output, and the "Fix written to stdout" hint all go to stderr so they remain visible in your terminal without polluting the pipe. Emits a `finding_fix_copied` telemetry event.
+- Interactive fix-wizard (`vertaa audit … --interactive`) gains a "Copy fix to stdout" menu choice. Selecting it copies the current finding's recommended fix and stays on the same finding so you can also baseline or accept after copying.
+
+### Fixed
+
+- CLI builds and runs cleanly again. A stale internal alias in the copy-fix command broke `npm run build` and cascaded into 240+ downstream test failures during the previous alpha cycle. The whole cascade is gone.
+- ANSI-colored error frames now render correctly in TTY mode for the `vertaa audit` "URL is required" error and for `vertaa explain --copy` missing-argument validation.
+- A long-standing mock-drift in 13 internal command tests is closed out, lifting the suite to 145/145 files green (2,371 tests pass, 4 PTY-only skipped on systems without `node-pty`).
+
+### Notes
+
+- This alpha skips 0.7.0-alpha.3 onward on the public mirror — earlier alphas were published to npm but not synced here. The diff against the last public version (`0.6.2`) is documented above in the Added + Fixed sections.
+
 ## [0.6.2] - 2026-05-05
 
 ### Security
