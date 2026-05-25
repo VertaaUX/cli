@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.8.0-alpha.2] - 2026-05-25
+
+> **Bug-fix release** on top of `0.8.0-alpha.1`. The `vertaa explain --copy | pbcopy` happy-path didn't actually work end-to-end against a real audit on `alpha.1` — three pre-existing issues surfaced post-publish and are fixed here. Install via `npm install -g @vertaaux/cli@next`. The stable `latest` tag remains at `0.6.2`.
+
+### Fixed
+
+- `vertaa audit URL --format json -o file.json` now writes addressable `ruleId` values for every issue. Most audits previously emitted `null` IDs on recommendation and IA findings, which meant `vertaa explain <id> --file file.json --copy` could not match findings by ID and the pipe-to-clipboard flow silently emitted nothing. (Audit-engine debt to retro-tag the underlying analyzers is a separate effort; the CLI now backfills synthetic stable IDs of the form `synthetic/<category>-<title-slug>-<idx>` at save and load.)
+- `vertaa explain --file out.json` now reads the standard `{ data: { issues }, meta }` envelope shape that `vertaa audit --format json` writes. Previously you had to manually `jq '{ issues: .data.issues }'` before piping. The bare `{ issues: [] }` shape continues to work for backwards compatibility.
+- Audit JSON's camelCase field names (`recommendedFix`, `wcagReference`, `businessImpact`, `impactScore`, `estimatedEffort`) are now first-class on the canonical `Issue` type. Previous releases only declared the snake_case variants, which led to silently-undefined values when consumers read the camelCase fields from the wire shape.
+
 ## [0.8.0-alpha.1] - 2026-05-25
 
 > **Alpha release on the `next` tag.** The stable `latest` tag remains at `0.6.2`. Install this alpha via `npm install -g @vertaaux/cli@next` or pin to `@vertaaux/cli@0.8.0-alpha.1`.
